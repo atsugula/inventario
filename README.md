@@ -25,7 +25,7 @@ API RESTful desarrollada con Laravel 10 para la gestión eficiente de productos 
 1. **Clonar el repositorio**
     ```bash
     git clone https://github.com/atsugula/inventario
-    cd inventario-api
+    cd inventario
     ```
 
 2. **Instalar dependencias**
