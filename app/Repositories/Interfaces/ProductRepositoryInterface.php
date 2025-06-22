@@ -2,11 +2,14 @@
 
 namespace App\Repositories\Interfaces;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Models\Product;
+
 interface ProductRepositoryInterface
 {
-    public function allPaginated();
-    public function findById($id);
-    public function create(array $data);
-    public function update($id, array $data);
-    public function delete($id);
+    public function allPaginated(int $perPage = 10): LengthAwarePaginator;
+    public function findById(int $id): Product;
+    public function create(array $data): Product;
+    public function update(int $id, array $data): Product;
+    public function delete(int $id): bool;
 }

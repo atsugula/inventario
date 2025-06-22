@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\V1;
 
 use Throwable;
-use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\V1\ProductResource;
 use App\Http\Resources\V1\ProductCollection;
+use App\Repositories\Interfaces\ProductRepositoryInterface;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
@@ -29,6 +29,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
  */
 class ProductController extends Controller
 {
+    protected ProductRepositoryInterface $productRepository;
+
+    public function __construct(ProductRepositoryInterface $productRepository)
+    {
+        $this->productRepository = $productRepository;
+    }
+
     /**
      * @OA\Get(
      *     path="/api/products",
@@ -43,13 +50,10 @@ class ProductController extends Controller
     public function index()
     {
         try {
-            $products = Product::with('category')->paginate(10);
+            $products = $this->productRepository->allPaginated();
             return response()->json(new ProductCollection($products));
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al obtener los productos',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al obtener los productos', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -78,15 +82,12 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = Product::with('category')->findOrFail($id);
+            $product = $this->productRepository->findById($id);
             return new ProductResource($product);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Producto no encontrado'], 404);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al mostrar el producto',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al mostrar el producto', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -128,24 +129,14 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['message' => 'Error de validación', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            $product = Product::create($request->all());
-
-            return response()->json([
-                'message' => 'Producto creado exitosamente',
-                'product' => new ProductResource($product)
-            ], 201);
+            $product = $this->productRepository->create($request->all());
+            return response()->json(['message' => 'Producto creado exitosamente', 'product' => new ProductResource($product)], 201);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al crear el producto',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al crear el producto', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -192,27 +183,16 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['message' => 'Error de validación', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            $product = Product::findOrFail($id);
-            $product->update($request->all());
-
-            return response()->json([
-                'message' => 'Producto actualizado correctamente',
-                'product' => new ProductResource($product)
-            ]);
+            $product = $this->productRepository->update($id, $request->all());
+            return response()->json(['message' => 'Producto actualizado correctamente', 'product' => new ProductResource($product)]);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Producto no encontrado'], 404);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al actualizar el producto',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al actualizar el producto', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -242,19 +222,12 @@ class ProductController extends Controller
     public function destroy($id)
     {
         try {
-            $product = Product::findOrFail($id);
-            $product->delete();
-
-            return response()->json([
-                'message' => 'Producto eliminado correctamente'
-            ]);
+            $this->productRepository->delete($id);
+            return response()->json(['message' => 'Producto eliminado correctamente']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Producto no encontrado'], 404);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al eliminar el producto',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al eliminar el producto', 'error' => $e->getMessage()], 500);
         }
     }
 }
