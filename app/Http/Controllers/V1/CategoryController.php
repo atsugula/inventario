@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\V1;
 
-use App\Models\Category;
+use Throwable;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Throwable;
+use App\Repositories\Interfaces\CategoryRepositoryInterface;
 
 /**
  * @OA\Tag(
@@ -17,6 +17,13 @@ use Throwable;
  */
 class CategoryController extends Controller
 {
+    protected CategoryRepositoryInterface $categoryRepository;
+
+    public function __construct(CategoryRepositoryInterface $categoryRepository)
+    {
+        $this->categoryRepository = $categoryRepository;
+    }
+
     /**
      * @OA\Post(
      *     path="/api/categories",
@@ -49,24 +56,14 @@ class CategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors'  => $validator->errors()
-            ], 422);
+            return response()->json(['message' => 'Error de validación', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            $category = Category::create($request->only(['name', 'description']));
-
-            return response()->json([
-                'message'  => 'Categoría creada exitosamente',
-                'category' => $category
-            ], 201);
+            $category = $this->categoryRepository->create($request->only(['name', 'description']));
+            return response()->json(['message' => 'Categoría creada exitosamente', 'category' => $category], 201);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al crear la categoría',
-                'error'   => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al crear la categoría', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -107,29 +104,16 @@ class CategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors'  => $validator->errors()
-            ], 422);
+            return response()->json(['message' => 'Error de validación', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            $category = Category::findOrFail($id);
-            $category->update($request->only(['name', 'description']));
-
-            return response()->json([
-                'message'  => 'Categoría actualizada correctamente',
-                'category' => $category
-            ]);
+            $category = $this->categoryRepository->update($id, $request->only(['name', 'description']));
+            return response()->json(['message' => 'Categoría actualizada correctamente', 'category' => $category]);
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Categoría no encontrada'
-            ], 404);
+            return response()->json(['message' => 'Categoría no encontrada'], 404);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al actualizar la categoría',
-                'error'   => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al actualizar la categoría', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -159,21 +143,12 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         try {
-            $category = Category::findOrFail($id);
-            $category->delete();
-
-            return response()->json([
-                'message' => 'Categoría eliminada correctamente'
-            ]);
+            $this->categoryRepository->delete($id);
+            return response()->json(['message' => 'Categoría eliminada correctamente']);
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Categoría no encontrada'
-            ], 404);
+            return response()->json(['message' => 'Categoría no encontrada'], 404);
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al eliminar la categoría',
-                'error'   => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Error al eliminar la categoría', 'error' => $e->getMessage()], 500);
         }
     }
 }

@@ -2,10 +2,12 @@
 
 namespace App\Repositories\Interfaces;
 
+use App\Models\Category;
+
 interface CategoryRepositoryInterface
 {
-    public function findById($id);
-    public function create(array $data);
-    public function update($id, array $data);
-    public function delete($id);
+    public function findById(int $id): Category;
+    public function create(array $data): Category;
+    public function update(int $id, array $data): Category;
+    public function delete(int $id): bool;
 }
